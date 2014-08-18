@@ -25,6 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -33,19 +34,29 @@ import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.Bitmap.CompressFormat;
+import android.media.MediaPlayer;
 import android.media.MediaScannerConnection;
 import android.media.MediaScannerConnection.MediaScannerConnectionClient;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
+import android.provider.DocumentsContract;
+// Bun: added for set maximum duration of video
 import android.provider.MediaStore;
+// import android.provider.MediaStore.Video;
+
 import android.util.Base64;
 import android.util.Log;
 
@@ -88,9 +99,9 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     //private boolean allowEdit;              // Should we allow the user to crop the image. UNUSED.
     
     //Add By ZhuShunqing
-    private boolean allowEdit;              //已自定义为开启头像裁切功能
-    private int aspectX, aspectY;           //头像裁切框比例
-    private String tmpfile;                 //裁切临时文件
+    private boolean allowEdit;              //âˆšÃ‡â€šÃ Ã«â€šÃ¢Â§âˆšÃ£âˆšÂ°â€šÃ‘Â¢âˆšÃ‡âˆšÃœâˆšâˆ‚â€šÃ„âˆžÅ“Ã„âˆšÂ¢â€šÃ„âˆžâ€šÃ Ã¨â€šÃ Â´âˆšÃ‡Â¬âˆ«âˆšÃ‘âˆšÃ‡âˆšâ„¢âˆšÃ²âˆšÃ‡Â¬ÃŸÂ¬â€¢âˆšÃ‡âˆšÃ¢âˆšÂ®âˆšÃ£Â¬Â£âˆšÃ–âˆšÃ‡âˆšâ€ âˆšÂ°âˆšÃ‡âˆšÂ§âˆšÂºâˆšÃ£âˆšÃ¢Å’Â©
+    private int aspectX, aspectY;           //âˆšÃ‡Â¬ÃŸÂ¬â€¢âˆšÃ‡âˆšÃ¢âˆšÂ®âˆšÃ£Â¬Â£âˆšÃ–âˆšÃ‡âˆšâ€ âˆšÂ°âˆšÃ¤Â¬âˆžâˆšÃºâˆšÃ¤âˆšÃ²âˆšÃ†â€šÃ„âˆžâˆšÂ¶âˆšÂ£
+    private String tmpfile;                 //âˆšÃ£Â¬Â£âˆšÃ–âˆšÃ‡âˆšâ€ âˆšÂ°â€šÃ„âˆžâ€šÃ Ã¨Â¬â€¢âˆšÃ¤âˆšâ‰¥â€šÃ Ã‡âˆšÃ¤âˆšÂ±âˆšÂ°â€šÃ„âˆžÂ¬â„¢â€šÃ Ã‡
 
     public CallbackContext callbackContext;
     private int numPics;
@@ -130,7 +141,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             this.correctOrientation = args.getBoolean(8);
             this.saveToPhotoAlbum = args.getBoolean(9);
 
-            //接受裁切比例参数 Add By ZhuShunqing
+            //âˆšÃ¤âˆšÂ©â€šÃ„Â¢âˆšÃ‡âˆšÂ®âˆšâ‰¥âˆšÃ£Â¬Â£âˆšÃ–âˆšÃ‡âˆšâ€ âˆšÂ°âˆšÃ¤âˆšÃ²âˆšÃ†â€šÃ„âˆžâˆšÂ¶âˆšÂ£âˆšÃ‡âˆšÂ®âˆšÃ¡âˆšÃ¤âˆšÃ˜â€šÃ Ã» Add By ZhuShunqing
             this.aspectX = args.getInt(12);
             this.aspectY = args.getInt(13);
             this.allowEdit = args.getBoolean(7);
@@ -217,10 +228,10 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         this.imageUri = Uri.fromFile(photo);
         intent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, this.imageUri);
 
-        //开启自带图像裁切功能 Add By ZhuShunqing
+        //âˆšÃ‡Â¬âˆ«âˆšÃ‘âˆšÃ‡âˆšâ„¢âˆšÃ²âˆšÃ£âˆšÂ°â€šÃ‘Â¢âˆšÃ‡â€šÃ Ã¨Â¬âˆ‚âˆšÃ‡âˆšÂµâˆšÂ¶âˆšÃ‡âˆšÃ¢âˆšÂ®âˆšÃ£Â¬Â£âˆšÃ–âˆšÃ‡âˆšâ€ âˆšÂ°âˆšÃ‡âˆšÂ§âˆšÂºâˆšÃ£âˆšÃ¢Å’Â© Add By ZhuShunqing
         //if(this.allowEdit){
-        //    intent.putExtra("crop", "true"); //有些机型上会报错
-        //    intent.putExtra("aspectX", this.aspectX);// 裁剪框比例
+        //    intent.putExtra("crop", "true"); //âˆšÃ¤âˆšâˆ«âˆšÂ¢â€šÃ„âˆžâ€šÃ Â´âˆšÂµâˆšÃ¤âˆšâˆ«â€šÃ Â´âˆšÃ‡âˆšÂªâˆšÂ£â€šÃ„âˆžâ€šÃ Ã¨âˆšÂ§â€šÃ„âˆžÂ¬âˆ«âˆšâˆ‚âˆšÃ¤âˆšÂ§â€šÃ„Â¢âˆšÃ âˆšÃ†âˆšÂ¥
+        //    intent.putExtra("aspectX", this.aspectX);// âˆšÃ£Â¬Â£âˆšÃ–âˆšÃ‡âˆšÂ¢â€šÃ‘Â¢âˆšÃ¤Â¬âˆžâˆšÃºâˆšÃ¤âˆšÃ²âˆšÃ†â€šÃ„âˆžâˆšÂ¶âˆšÂ£
         //    intent.putExtra("aspectY", this.aspectY);
         //}
  
@@ -231,16 +242,16 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 //            LOG.d(LOG_TAG, "ERROR: You must use the CordovaInterface for this to work correctly. Please implement it in your activity");
     }
     
-    //调用系统裁图 Add By ZhuShunqing
+    //âˆšÃ£â€šÃ Ã»âˆšÃ¢âˆšÃ…âˆšÃ†Â¬Ã†âˆšÃ…â€šÃ¢â€¢Â¬â„¢âˆšÃ…Â¬â„¢âˆšÂºâˆšÃ£Â¬Â£âˆšÃ–âˆšÃ‡âˆšÂµâˆšÂ¶ Add By ZhuShunqing
     private void cropImageUri(Uri uri){
         Intent intent = new Intent("com.android.camera.action.CROP");
         intent.setDataAndType(uri, "image/*");
         intent.putExtra("crop", "true");
         intent.putExtra("aspectX", aspectX);
         intent.putExtra("aspectY", aspectY);
-        if(targetWidth > 0) //如果指定输出宽度
+        if(targetWidth > 0) //âˆšÃ‡Â¬âˆ‚âˆšÃ¡âˆšÃ¤âˆšÂªâˆšâˆ«âˆšÃ¤âˆšâ€¢âˆšÂ°âˆšÃ‡âˆšÃœâˆšâˆ‚âˆšÃ£âˆšÂ¶âˆšÂ¨âˆšÃ‡âˆšÂ°â€šÃ Â´âˆšÃ‡âˆšÃœÅ’Â©âˆšÃ‡â€šÃ Â´Â¬âˆ‚
             intent.putExtra("outputX", targetWidth);
-        if(targetHeight > 0) //如果指定输出高度
+        if(targetHeight > 0) //âˆšÃ‡Â¬âˆ‚âˆšÃ¡âˆšÃ¤âˆšÂªâˆšâˆ«âˆšÃ¤âˆšâ€¢âˆšÂ°âˆšÃ‡âˆšÃœâˆšâˆ‚âˆšÃ£âˆšÂ¶âˆšÂ¨âˆšÃ‡âˆšÂ°â€šÃ Â´âˆšÃ Â¬Â¥âˆšâ‰¤âˆšÃ‡â€šÃ Â´Â¬âˆ‚
             intent.putExtra("outputY", targetHeight);
         intent.putExtra("scale", true);
         intent.putExtra(MediaStore.EXTRA_OUTPUT, this.imageUri);
@@ -259,7 +270,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
      * @return a File object pointing to the temporary picture
      */
     private File createCaptureFile(int encodingType) {
-        //指定临时文件 Add By ZhuShunqing
+        //âˆšÃ¤âˆšâ€¢âˆšÂ°âˆšÃ‡âˆšÃœâˆšâˆ‚â€šÃ„âˆžâ€šÃ Ã¨Â¬â€¢âˆšÃ¤âˆšâ‰¥â€šÃ Ã‡âˆšÃ¤âˆšÂ±âˆšÂ°â€šÃ„âˆžÂ¬â„¢â€šÃ Ã‡ Add By ZhuShunqing
         tmpfile = getTempDirectoryPath() + ".tmp";
         if (encodingType == JPEG) {
             tmpfile += ".jpg";
@@ -309,26 +320,28 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             title = GET_All;
         }
 
-        //开启系统图像裁切功能 Add By ZhuShunqing
+        //âˆšÃ‡Â¬âˆ«âˆšÃ‘âˆšÃ‡âˆšâ„¢âˆšÃ²âˆšÃ…â€šÃ¢â€¢Â¬â„¢âˆšÃ…Â¬â„¢âˆšÂºâˆšÃ‡âˆšÂµâˆšÂ¶âˆšÃ‡âˆšÃ¢âˆšÂ®âˆšÃ£Â¬Â£âˆšÃ–âˆšÃ‡âˆšâ€ âˆšÂ°âˆšÃ‡âˆšÂ§âˆšÂºâˆšÃ£âˆšÃ¢Å’Â© Add By ZhuShunqing
         if(this.allowEdit){
+
 //          intent.putExtra("crop", "true");
-//          intent.putExtra("aspectX", this.aspectX);// 裁剪框比例
+//          intent.putExtra("aspectX", this.aspectX);// âˆšÃ£Â¬Â£âˆšÃ–âˆšÃ‡âˆšÂ¢â€šÃ‘Â¢âˆšÃ¤Â¬âˆžâˆšÃºâˆšÃ¤âˆšÃ²âˆšÃ†â€šÃ„âˆžâˆšÂ¶âˆšÂ£
 //          intent.putExtra("aspectY", this.aspectY);
-//          if(targetWidth > 0) //如果指定输出宽度
+//          if(targetWidth > 0) //âˆšÃ‡Â¬âˆ‚âˆšÃ¡âˆšÃ¤âˆšÂªâˆšâˆ«âˆšÃ¤âˆšâ€¢âˆšÂ°âˆšÃ‡âˆšÃœâˆšâˆ‚âˆšÃ£âˆšÂ¶âˆšÂ¨âˆšÃ‡âˆšÂ°â€šÃ Â´âˆšÃ‡âˆšÃœÅ’Â©âˆšÃ‡â€šÃ Â´Â¬âˆ‚
 //              intent.putExtra("outputX", targetWidth);
-//          if(targetHeight > 0) //如果指定输出高度
+//          if(targetHeight > 0) //âˆšÃ‡Â¬âˆ‚âˆšÃ¡âˆšÃ¤âˆšÂªâˆšâˆ«âˆšÃ¤âˆšâ€¢âˆšÂ°âˆšÃ‡âˆšÃœâˆšâˆ‚âˆšÃ£âˆšÂ¶âˆšÂ¨âˆšÃ‡âˆšÂ°â€šÃ Â´âˆšÃ Â¬Â¥âˆšâ‰¤âˆšÃ‡â€šÃ Â´Â¬âˆ‚
 //              intent.putExtra("outputY", targetHeight);
 //          // Specify file so that large image is captured and returned
             File photo = createCaptureFile(encodingType);
 //          intent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, Uri.fromFile(photo));
             this.imageUri = Uri.fromFile(photo);
         }
-      
+        
         intent.setAction(Intent.ACTION_GET_CONTENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 30);
+        
         if (this.cordova != null) {
-            this.cordova.startActivityForResult((CordovaPlugin) this, Intent.createChooser(intent,
-                    new String(title)), (srcType + 1) * 16 + returnType + 1);
+            this.cordova.startActivityForResult((CordovaPlugin) this, Intent.createChooser(intent,new String(title)), (srcType + 1) * 16 + returnType + 1);
         }
     }
 
@@ -477,7 +490,33 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         // If you ask for video or all media type you will automatically get back a file URI
         // and there will be no attempt to resize any returned data
         if (this.mediaType != PICTURE) {
-            this.callbackContext.success(uri.toString());
+            
+            // ======= Added by bun ======== //
+            // added new return value for video duration
+            int msec = MediaPlayer.create(cordova.getActivity(), uri).getDuration();
+            String selectedVideoPath = getPath(cordova.getActivity(), uri);
+
+            File temp = new File(selectedVideoPath);
+            long size = temp.length();
+            
+            msec = msec/1000;
+            size = size/(1024*1024);
+
+            Log.d("8CAN", "Size: "+size);
+            Log.d("8CAN", "Duration: "+msec);
+            
+            String[] result = new String[3];
+            result[0] = uri.toString();
+            result[1] = new Integer(msec).toString();
+            result[2] = Long.toString(size);
+            
+            JSONArray mJSONArray = new JSONArray(Arrays.asList(result));
+            this.callbackContext.success(mJSONArray);
+            // ======= Added by bun ======== //
+            
+            
+            // Bun: original code from Cordova
+            //this.callbackContext.success(uri.toString());
         }
         else {
             // This is a special case to just return the path as no scaling,
@@ -486,7 +525,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     (destType == FILE_URI || destType == NATIVE_URI) && !this.correctOrientation) {
                 Log.d("TAG", uri + "");
 
-                //处理裁切后 Add By ZhuShunqing
+                //âˆšÃ‡Â¬ÃŸâˆšÃ«âˆšÃ…âˆšâ„¢âˆšÃºâˆšÃ£Â¬Â£âˆšÃ–âˆšÃ‡âˆšâ€ âˆšÂ°âˆšÃ‡âˆšâ„¢âˆšÂ© Add By ZhuShunqing
                 if(this.allowEdit){
 //                  this.callbackContext.success(this.tmpfile);
                     this.cropImageUri(uri);
@@ -538,7 +577,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 // If sending filename back
                 else if (destType == FILE_URI || destType == NATIVE_URI) {
 
-                    //处理裁切 Add By ZhuShunqing
+                    //âˆšÃ‡Â¬ÃŸâˆšÃ«âˆšÃ…âˆšâ„¢âˆšÃºâˆšÃ£Â¬Â£âˆšÃ–âˆšÃ‡âˆšâ€ âˆšÂ° Add By ZhuShunqing
                     if(this.allowEdit){
                         this.cropImageUri(uri);
                     }else{
@@ -619,7 +658,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             }
         }
         
-        //裁切图片完成 Add By ZhuShunqing
+        //âˆšÃ£Â¬Â£âˆšÃ–âˆšÃ‡âˆšâ€ âˆšÂ°âˆšÃ‡âˆšÂµâˆšÂ¶âˆšÃ…âˆšÂ¢âˆšÂ°âˆšÃ‡âˆšÃœâˆšâ€¢âˆšÃ¤âˆšâ€ âˆšâ„¢ Add By ZhuShunqing
         else if(requestCode == 1){
             this.callbackContext.success(this.tmpfile);
         }
@@ -956,4 +995,140 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     public void onScanCompleted(String path, Uri uri) {
         this.conn.disconnect();
     }
+    
+  //================= Added by beebun ====================//
+    @SuppressLint("NewApi")
+    public String getPath(final Context context, final Uri uri) {
+
+        final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
+
+        // DocumentProvider
+        if (isKitKat && DocumentsContract.isDocumentUri(context, uri)) {
+            // ExternalStorageProvider
+            if (isExternalStorageDocument(uri)) {
+                final String docId = DocumentsContract.getDocumentId(uri);
+                final String[] split = docId.split(":");
+                final String type = split[0];
+
+                if ("primary".equalsIgnoreCase(type)) {
+                    return Environment.getExternalStorageDirectory() + "/" + split[1];
+                }
+
+                // TODO handle non-primary volumes
+            }
+            // DownloadsProvider
+            else if (isDownloadsDocument(uri)) {
+
+                final String id = DocumentsContract.getDocumentId(uri);
+                final Uri contentUri = ContentUris.withAppendedId(
+                        Uri.parse("content://downloads/public_downloads"), Long.valueOf(id));
+
+                return getDataColumn(context, contentUri, null, null);
+            }
+            // MediaProvider
+            else if (isMediaDocument(uri)) {
+                final String docId = DocumentsContract.getDocumentId(uri);
+                final String[] split = docId.split(":");
+                final String type = split[0];
+
+                Uri contentUri = null;
+                if ("image".equals(type)) {
+                    contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                } else if ("video".equals(type)) {
+                    contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+                } else if ("audio".equals(type)) {
+                    contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+                }
+
+                final String selection = "_id=?";
+                final String[] selectionArgs = new String[] {
+                        split[1]
+                };
+
+                return getDataColumn(context, contentUri, selection, selectionArgs);
+            }
+        }
+        // MediaStore (and general)
+        else if ("content".equalsIgnoreCase(uri.getScheme())) {
+
+            // Return the remote address
+            if (isGooglePhotosUri(uri))
+                return uri.getLastPathSegment();
+
+            return getDataColumn(context, uri, null, null);
+        }
+        // File
+        else if ("file".equalsIgnoreCase(uri.getScheme())) {
+            return uri.getPath();
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the value of the data column for this Uri. This is useful for
+     * MediaStore Uris, and other file-based ContentProviders.
+     *
+     * @param context The context.
+     * @param uri The Uri to query.
+     * @param selection (Optional) Filter used in the query.
+     * @param selectionArgs (Optional) Selection arguments used in the query.
+     * @return The value of the _data column, which is typically a file path.
+     */
+    public String getDataColumn(Context context, Uri uri, String selection,
+            String[] selectionArgs) {
+
+        Cursor cursor = null;
+        final String column = "_data";
+        final String[] projection = {
+                column
+        };
+
+        try {
+            cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs,
+                    null);
+            if (cursor != null && cursor.moveToFirst()) {
+                final int index = cursor.getColumnIndexOrThrow(column);
+                return cursor.getString(index);
+            }
+        } finally {
+            if (cursor != null)
+                cursor.close();
+        }
+        return null;
+    }
+
+
+    /**
+     * @param uri The Uri to check.
+     * @return Whether the Uri authority is ExternalStorageProvider.
+     */
+    public boolean isExternalStorageDocument(Uri uri) {
+        return "com.android.externalstorage.documents".equals(uri.getAuthority());
+    }
+
+    /**
+     * @param uri The Uri to check.
+     * @return Whether the Uri authority is DownloadsProvider.
+     */
+    public boolean isDownloadsDocument(Uri uri) {
+        return "com.android.providers.downloads.documents".equals(uri.getAuthority());
+    }
+
+    /**
+     * @param uri The Uri to check.
+     * @return Whether the Uri authority is MediaProvider.
+     */
+    public boolean isMediaDocument(Uri uri) {
+        return "com.android.providers.media.documents".equals(uri.getAuthority());
+    }
+
+    /**
+     * @param uri The Uri to check.
+     * @return Whether the Uri authority is Google Photos.
+     */
+    public boolean isGooglePhotosUri(Uri uri) {
+        return "com.google.android.apps.photos.content".equals(uri.getAuthority());
+    }
+    //================= End ====================//
 }
