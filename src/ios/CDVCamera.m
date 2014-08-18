@@ -242,7 +242,7 @@ static NSSet* org_apache_cordova_validArrowDirections;
 
 - (void)popoverControllerDidDismissPopover:(id)popoverController
 {
-    // [ self imagePickerControllerDidCancel:self.pickerController ];	'
+    // [ self imagePickerControllerDidCancel:self.pickerController ];   '
     UIPopoverController* pc = (UIPopoverController*)popoverController;
 
     [pc dismissPopoverAnimated:YES];
@@ -322,7 +322,7 @@ static NSSet* org_apache_cordova_validArrowDirections;
                     self.metadata = [[NSMutableDictionary alloc] init];
                     
                     NSMutableDictionary *EXIFDictionary = [[controllerMetadata objectForKey:(NSString *)kCGImagePropertyExifDictionary]mutableCopy];
-                    if (EXIFDictionary)	[self.metadata setObject:EXIFDictionary forKey:(NSString *)kCGImagePropertyExifDictionary];
+                    if (EXIFDictionary) [self.metadata setObject:EXIFDictionary forKey:(NSString *)kCGImagePropertyExifDictionary];
                     
                     [[self locationManager] startUpdatingLocation];
                     return;
@@ -362,7 +362,20 @@ static NSSet* org_apache_cordova_validArrowDirections;
     // NOT IMAGE TYPE (MOVIE)
     else {
         NSString* moviePath = [[info objectForKey:UIImagePickerControllerMediaURL] absoluteString];
-        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:moviePath];
+        
+        //================== Edited by Bun ===================
+        NSURL *url          = [[NSURL alloc] initWithString:moviePath];
+        NSData * movieData  = [NSData dataWithContentsOfURL:url];
+        float movieSize     = (float)(movieData.length/1024.0f/1024.0f);
+        
+        NSString *fileSize  = [NSString stringWithFormat:@"%.2f", movieSize];
+        NSArray *returnArr  = [NSArray arrayWithObjects: moviePath, fileSize, nil];
+
+        // Bun: comment for returning in array
+        // result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString: returnValue];
+        
+        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray: returnArr];
+        //================== Edited by Bun ===================
     }
 
     if (result) {
@@ -564,11 +577,11 @@ static NSSet* org_apache_cordova_validArrowDirections;
     [postBody appendData:[@"Content-Type: image/png\r\n\r\n" dataUsingEncoding : NSUTF8StringEncoding]];
     [postBody appendData:imageData];
 
-    //	// second parameter information
-    //	[postBody appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    //	[postBody appendData:[@"Content-Disposition: form-data; name=\"some_other_name\"\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-    //	[postBody appendData:[@"some_other_value" dataUsingEncoding:NSUTF8StringEncoding]];
-    //	[postBody appendData:[[NSString stringWithFormat:@"\r\n--%@--\r \n",boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    //  // second parameter information
+    //  [postBody appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    //  [postBody appendData:[@"Content-Disposition: form-data; name=\"some_other_name\"\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+    //  [postBody appendData:[@"some_other_value" dataUsingEncoding:NSUTF8StringEncoding]];
+    //  [postBody appendData:[[NSString stringWithFormat:@"\r\n--%@--\r \n",boundary] dataUsingEncoding:NSUTF8StringEncoding]];
 
     [req setHTTPBody:postBody];
 
@@ -577,7 +590,7 @@ static NSSet* org_apache_cordova_validArrowDirections;
     [NSURLConnection sendSynchronousRequest:req returningResponse:&response error:&error];
 
     //  NSData* result = [NSURLConnection sendSynchronousRequest:req returningResponse:&response error:&error];
-    //	NSString * resultStr =  [[[NSString alloc] initWithData:result encoding:NSUTF8StringEncoding] autorelease];
+    //  NSString * resultStr =  [[[NSString alloc] initWithData:result encoding:NSUTF8StringEncoding] autorelease];
 
     self.hasPendingOperation = NO;
 }
@@ -585,57 +598,57 @@ static NSSet* org_apache_cordova_validArrowDirections;
 
 - (CLLocationManager *)locationManager {
     
-	if (locationManager != nil) {
-		return locationManager;
-	}
+    if (locationManager != nil) {
+        return locationManager;
+    }
     
-	locationManager = [[CLLocationManager alloc] init];
-	[locationManager setDesiredAccuracy:kCLLocationAccuracyNearestTenMeters];
-	[locationManager setDelegate:self];
+    locationManager = [[CLLocationManager alloc] init];
+    [locationManager setDesiredAccuracy:kCLLocationAccuracyNearestTenMeters];
+    [locationManager setDelegate:self];
     
-	return locationManager;
+    return locationManager;
 }
 
 - (void)locationManager:(CLLocationManager*)manager didUpdateToLocation:(CLLocation*)newLocation fromLocation:(CLLocation*)oldLocation
 {
-	if (locationManager != nil) {
-		[self.locationManager stopUpdatingLocation];
-		self.locationManager = nil;
+    if (locationManager != nil) {
+        [self.locationManager stopUpdatingLocation];
+        self.locationManager = nil;
         
-		NSMutableDictionary *GPSDictionary = [[NSMutableDictionary dictionary] init];
+        NSMutableDictionary *GPSDictionary = [[NSMutableDictionary dictionary] init];
         
-		CLLocationDegrees latitude  = newLocation.coordinate.latitude;
-		CLLocationDegrees longitude = newLocation.coordinate.longitude;
+        CLLocationDegrees latitude  = newLocation.coordinate.latitude;
+        CLLocationDegrees longitude = newLocation.coordinate.longitude;
         
-		// latitude
-		if (latitude < 0.0) {
-			latitude = latitude * -1.0f;
-			[GPSDictionary setObject:@"S" forKey:(NSString*)kCGImagePropertyGPSLatitudeRef];
-		} else {
-			[GPSDictionary setObject:@"N" forKey:(NSString*)kCGImagePropertyGPSLatitudeRef];
-		}
-		[GPSDictionary setObject:[NSNumber numberWithFloat:latitude] forKey:(NSString*)kCGImagePropertyGPSLatitude];
+        // latitude
+        if (latitude < 0.0) {
+            latitude = latitude * -1.0f;
+            [GPSDictionary setObject:@"S" forKey:(NSString*)kCGImagePropertyGPSLatitudeRef];
+        } else {
+            [GPSDictionary setObject:@"N" forKey:(NSString*)kCGImagePropertyGPSLatitudeRef];
+        }
+        [GPSDictionary setObject:[NSNumber numberWithFloat:latitude] forKey:(NSString*)kCGImagePropertyGPSLatitude];
         
-		// longitude
-		if (longitude < 0.0) {
-			longitude = longitude * -1.0f;
-			[GPSDictionary setObject:@"W" forKey:(NSString*)kCGImagePropertyGPSLongitudeRef];
-		}
-		else {
-			[GPSDictionary setObject:@"E" forKey:(NSString*)kCGImagePropertyGPSLongitudeRef];
-		}
-		[GPSDictionary setObject:[NSNumber numberWithFloat:longitude] forKey:(NSString*)kCGImagePropertyGPSLongitude];
+        // longitude
+        if (longitude < 0.0) {
+            longitude = longitude * -1.0f;
+            [GPSDictionary setObject:@"W" forKey:(NSString*)kCGImagePropertyGPSLongitudeRef];
+        }
+        else {
+            [GPSDictionary setObject:@"E" forKey:(NSString*)kCGImagePropertyGPSLongitudeRef];
+        }
+        [GPSDictionary setObject:[NSNumber numberWithFloat:longitude] forKey:(NSString*)kCGImagePropertyGPSLongitude];
         
-		// altitude
+        // altitude
         CGFloat altitude = newLocation.altitude;
         if (!isnan(altitude)){
-			if (altitude < 0) {
-				altitude = -altitude;
-				[GPSDictionary setObject:@"1" forKey:(NSString *)kCGImagePropertyGPSAltitudeRef];
-			} else {
-				[GPSDictionary setObject:@"0" forKey:(NSString *)kCGImagePropertyGPSAltitudeRef];
-			}
-			[GPSDictionary setObject:[NSNumber numberWithFloat:altitude] forKey:(NSString *)kCGImagePropertyGPSAltitude];
+            if (altitude < 0) {
+                altitude = -altitude;
+                [GPSDictionary setObject:@"1" forKey:(NSString *)kCGImagePropertyGPSAltitudeRef];
+            } else {
+                [GPSDictionary setObject:@"0" forKey:(NSString *)kCGImagePropertyGPSAltitudeRef];
+            }
+            [GPSDictionary setObject:[NSNumber numberWithFloat:altitude] forKey:(NSString *)kCGImagePropertyGPSAltitude];
         }
         
         // Time and date
@@ -646,18 +659,18 @@ static NSSet* org_apache_cordova_validArrowDirections;
         [formatter setDateFormat:@"yyyy:MM:dd"];
         [GPSDictionary setObject:[formatter stringFromDate:newLocation.timestamp] forKey:(NSString *)kCGImagePropertyGPSDateStamp];
         
-		[self.metadata setObject:GPSDictionary forKey:(NSString *)kCGImagePropertyGPSDictionary];
- 		[self imagePickerControllerReturnImageResult];
-	}
+        [self.metadata setObject:GPSDictionary forKey:(NSString *)kCGImagePropertyGPSDictionary];
+        [self imagePickerControllerReturnImageResult];
+    }
 }
 
 - (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error {
-	if (locationManager != nil) {
-		[self.locationManager stopUpdatingLocation];
-		self.locationManager = nil;
+    if (locationManager != nil) {
+        [self.locationManager stopUpdatingLocation];
+        self.locationManager = nil;
         
-		[self imagePickerControllerReturnImageResult];
-	}
+        [self imagePickerControllerReturnImageResult];
+    }
 }
 
 - (void)imagePickerControllerReturnImageResult
