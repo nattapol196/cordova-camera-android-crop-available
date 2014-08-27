@@ -497,7 +497,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             String selectedVideoPath = getPath(cordova.getActivity(), uri);
 
             File temp = new File(selectedVideoPath);
-            long size = temp.length();
+            double size = temp.length();
             
             msec = msec/1000;
             size = size/(1024*1024);
@@ -508,7 +508,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             String[] result = new String[3];
             result[0] = uri.toString();
             result[1] = new Integer(msec).toString();
-            result[2] = Long.toString(size);
+            result[2] = Double.toString(size);
             
             JSONArray mJSONArray = new JSONArray(Arrays.asList(result));
             this.callbackContext.success(mJSONArray);
