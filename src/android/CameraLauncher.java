@@ -493,22 +493,30 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             
             // ======= Added by bun ======== //
             // added new return value for video duration
-            int msec = MediaPlayer.create(cordova.getActivity(), uri).getDuration();
-            String selectedVideoPath = getPath(cordova.getActivity(), uri);
-
-            File temp = new File(selectedVideoPath);
-            double size = temp.length();
-            
-            msec = msec/1000;
-            size = size/(1024*1024);
-
-            Log.d("8CAN", "Size: "+size);
-            Log.d("8CAN", "Duration: "+msec);
-            
             String[] result = new String[3];
-            result[0] = uri.toString();
-            result[1] = new Integer(msec).toString();
-            result[2] = Double.toString(size);
+            try{
+                int msec = MediaPlayer.create(cordova.getActivity(), uri).getDuration();
+                String selectedVideoPath = getPath(cordova.getActivity(), uri);
+
+                File temp = new File(selectedVideoPath);
+                double size = temp.length();
+                
+                msec = msec/1000;
+                size = size/(1024*1024);
+
+                Log.d("8CAN", "Size: "+size);
+                Log.d("8CAN", "Duration: "+msec);
+                
+                result[0] = uri.toString();
+                result[1] = new Integer(msec).toString();
+                result[2] = Double.toString(size);
+            }
+            finally
+            {
+                result[0] = "INVALID_FILE";
+                result[1] = "0";
+                result[2] = "0";
+            }
             
             JSONArray mJSONArray = new JSONArray(Arrays.asList(result));
             this.callbackContext.success(mJSONArray);
